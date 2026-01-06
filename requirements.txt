@@ -1,0 +1,5 @@
+google-genai
+moviepy
+tiktok-uploader
+playwright
+python-dotenv
