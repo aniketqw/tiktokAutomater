@@ -2,7 +2,7 @@ name: Daily Faceless TikTok
 on:
   schedule:
     - cron: '0 12 * * *' # Every day at noon
-  workflow_dispatch:      # Allows you to test manually from the GitHub UI
+  workflow_dispatch:      # This adds a "Run Workflow" button so you can test it NOW
 
 jobs:
   post:
@@ -19,16 +19,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick
-          # CRITICAL: Fix ImageMagick security policy to allow font rendering
+          # This line is CRITICAL for MoviePy to write text
           sudo sed -i 's/none/read,write/g' /etc/ImageMagick-6/policy.xml
 
       - name: Install Python Deps
         run: |
-          # Added edge-tts to the installation list
           pip install google-genai moviepy tiktok-uploader playwright edge-tts
           playwright install chromium --with-deps
 
-      - name: Decode Cookies
+      - name: Create Cookie File
         env:
           COOKIE_DATA: ${{ secrets.TIKTOK_COOKIES }}
         run: echo "$COOKIE_DATA" > cookies.txt
