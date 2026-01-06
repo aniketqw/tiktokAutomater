@@ -3,9 +3,9 @@ import asyncio
 import edge_tts
 import datetime
 import glob
+import base64
 from google import genai
 from video_engine import create_video
-# Using the browser-based uploader for YouTube
 from youtube_up.uploader import YTUploaderApp 
 
 # 1. Initialize Gemini Client
@@ -28,7 +28,7 @@ def cleanup_old_videos(days_to_keep=7):
             print(f"🗑️ Deleted: {file}")
 
 def update_index_html(video_file, timestamp, script_text):
-    """Appends the new video entry to your GitHub Pages dashboard."""
+    """Appends the new video entry to your dashboard."""
     html_file = "index.html"
     if not os.path.exists(html_file):
         with open(html_file, "w") as f:
@@ -58,20 +58,12 @@ async def run_automation():
 
     now = datetime.datetime.now()
     timestamp_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-    # Using 'short_' prefix for YouTube
     video_filename = f"short_{timestamp_str}.mp4"
 
     print(f"🎬 Step 1: Generating YouTube Script for {timestamp_str}...")
-    prompt = """
-    Write a 25-30 second viral YouTube Shorts script about a 'Mind-Blowing Fact'.
-    STYLE: High energy, punchy. CONTEXT: Plays over stunt footage.
-    Output spoken text ONLY. No emojis or stage directions.
-    """
+    prompt = "Write a 25-30 second viral YouTube Shorts script about a Mind-Blowing Fact. Output spoken text ONLY."
     
-    response = client.models.generate_content(
-        model="gemini-1.5-flash", 
-        contents=prompt
-    )
+    response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
     script_text = response.text
 
     print("🎙️ Step 2: Generating Audio...")
@@ -87,15 +79,15 @@ async def run_automation():
 
     print("🚀 Step 5: Uploading to YouTube Shorts...")
     try:
-        # cookie_bundle points to the file created by GitHub Action
+        # The Action decodes the secret into this filename
         uploader = YTUploaderApp(cookie_bundle='youtube_cookies.json')
         uploader.upload(
             video_filename,
-            title=f"Mind-Blowing Fact! #Shorts",
+            title=f"Did you know? 🤯 #Shorts",
             description=f"{script_text}\n\n#stunts #facts #ai #shorts",
             public=True
         )
-        print(f"✅ Success! Short posted and saved as {video_filename}")
+        print(f"✅ Success! Short posted as {video_filename}")
     except Exception as e:
         print(f"❌ YouTube Upload failed: {e}")
 
