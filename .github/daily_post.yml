@@ -1,12 +1,11 @@
-name: Daily Faceless TikTok
+name: Daily YouTube Shorts Automation
 permissions:
-  contents: write # FIX: Grants permission to push videos/index.html back to repo
+  contents: write
 
 on:
   schedule:
-    # FIX: 3 Posts Per Day (Times are in UTC: 4 AM, 12 PM, 8 PM)
-    - cron: '0 4,12,20 * * *' 
-  workflow_dispatch: # Allows manual trigger for testing
+    - cron: '0 4,12,20 * * *' # 3 Posts per day (4 AM, 12 PM, 8 PM UTC)
+  workflow_dispatch:
 
 jobs:
   post:
@@ -23,28 +22,26 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick google-chrome-stable
-          # FIX: Essential for MoviePy text rendering in 2026
           sudo sed -i 's/none/read,write/g' /etc/ImageMagick-6/policy.xml
 
       - name: Install Python Deps
         run: |
-          pip install google-genai moviepy tiktok-uploader playwright edge-tts
+          pip install google-genai moviepy youtube-up playwright edge-tts
           playwright install chromium --with-deps
 
-      - name: Create Cookie File
+      - name: Decode YouTube Cookies
         env:
-          COOKIE_DATA: ${{ secrets.TIKTOK_COOKIES }}
-        run: echo "$COOKIE_DATA" > cookies.txt
+          YT_B64: ${{ secrets.YT_COOKIES_B64 }}
+        run: echo "$YT_B64" | base64 --decode > youtube_cookies.json
 
       - name: Run Bot
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
-      - name: Commit and Push Video & Logs
+      - name: Commit and Push Video & Dashboard
         run: |
-          git config --global user.name "TikTok-Bot"
+          git config --global user.name "YouTube-Shorts-Bot"
           git config --global user.email "bot@github.com"
           git add .
-          # Only commit if there are changes to avoid workflow errors
-          git diff --quiet && git diff --staged --quiet || (git commit -m "New video & dashboard update: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "New Short & Gallery update: $(date)" && git push)
