@@ -1,14 +1,14 @@
 name: Daily YouTube Shorts Automation
 permissions:
-  contents: write
+  contents: write  # CRITICAL: Fixes the 'read' only error in your logs
 
 on:
   schedule:
     - cron: '0 4,12,20 * * *' # 3 Posts per day
   push:
     branches:
-      - main              # TRIGGER: Runs whenever you push a new commit
-  workflow_dispatch:      # Manual trigger
+      - main              # TRIGGER: Runs on every new commit
+  workflow_dispatch:      # Allows manual testing
 
 jobs:
   post:
@@ -25,6 +25,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick google-chrome-stable
+          # Fixes MoviePy text rendering for Ubuntu 24.04
           sudo sed -i 's/none/read,write/g' /etc/ImageMagick-6/policy.xml
 
       - name: Install Python Deps
@@ -35,6 +36,7 @@ jobs:
       - name: Decode YouTube Cookies
         env:
           YT_B64: ${{ secrets.YT_COOKIES_B64 }}
+        # Decodes your Base64 secret into the JSON file needed by the script
         run: echo "$YT_B64" | base64 --decode > youtube_cookies.json
 
       - name: Run Bot
@@ -47,4 +49,5 @@ jobs:
           git config --global user.name "YouTube-Shorts-Bot"
           git config --global user.email "bot@github.com"
           git add .
-          git diff --quiet && git diff --staged --quiet || (git commit -m "New Short & Gallery update: $(date)" && git push)
+          # Only push if new content was actually created
+          git diff --quiet && git diff --staged --quiet || (git commit -m "New Short & Dashboard update: $(date)" && git push)
