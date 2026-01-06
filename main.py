@@ -2,6 +2,7 @@ import os
 import asyncio
 import edge_tts
 import datetime
+import glob
 from google import genai
 from video_engine import create_video
 from tiktok_uploader.upload import upload_video
@@ -14,6 +15,17 @@ async def generate_voiceover(text, output_path):
     voice = "en-US-AvaNeural" 
     communicate = edge_tts.Communicate(text, voice)
     await communicate.save(output_path)
+
+def cleanup_old_videos(days_to_keep=7):
+    """Deletes videos older than the specified days to save GitHub storage."""
+    print(f"🧹 Cleaning up videos older than {days_to_keep} days...")
+    now = datetime.datetime.now()
+    # Look for all video_*.mp4 files
+    for file in glob.glob("video_*.mp4"):
+        file_time = datetime.datetime.fromtimestamp(os.path.getctime(file))
+        if (now - file_time).days > days_to_keep:
+            os.remove(file)
+            print(f"🗑️ Deleted: {file}")
 
 def update_index_html(video_file, timestamp, script_text):
     """Appends the new video entry to the dashboard."""
@@ -37,19 +49,19 @@ def update_index_html(video_file, timestamp, script_text):
     </div>
     """
     
-    # Append the entry before the closing tags
     with open(html_file, "r") as f:
         content = f.read()
     
-    if "</div></body></html>" in content:
-        new_content = content.replace("</div></body></html>", entry + "</div></body></html>")
-    else:
-        new_content = content + entry + "</div></body></html>"
-        
-    with open(html_file, "w") as f:
-        f.write(new_content)
+    # Insert new entry at the TOP of the gallery for better UX
+    if "<div id='gallery'>" in content:
+        new_content = content.replace("<div id='gallery'>", f"<div id='gallery'>{entry}")
+        with open(html_file, "w") as f:
+            f.write(new_content)
 
 async def run_automation():
+    # 0. Cleanup storage before starting
+    cleanup_old_videos(days_to_keep=7)
+
     # Generate Timestamp for unique filenames
     now = datetime.datetime.now()
     timestamp_str = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -73,23 +85,25 @@ async def run_automation():
     await generate_voiceover(script_text, audio_path)
 
     print("🎞️ Step 3: Assembling Stunt Video...")
-    # Modified to accept the output_name parameter
-    video_path = create_video(audio_path, script_text=script_text)
-    # Rename to our unique timestamped name
-    os.rename(video_path, video_filename)
+    # Generate the video
+    temp_path = create_video(audio_path, script_text=script_text)
+    # Move to timestamped filename
+    os.rename(temp_path, video_filename)
 
     print("📄 Step 4: Updating Index Dashboard...")
     update_index_html(video_filename, timestamp_str, script_text)
 
     print("📱 Step 5: Posting to TikTok...")
     try:
+        # Using the Selenium-based tiktok-uploader settings
         upload_video(
             video_filename,
-            description=f"Wait for it... 🤯 #stunts #parkour #ai #facts",
+            description=f"Wait for the end! 🤯 #stunts #facts #ai",
             cookies='cookies.txt',
-            browser='chromium'
+            browser='chrome',
+            headless=True
         )
-        print(f"✅ Success! Video saved as {video_filename} and posted.")
+        print(f"✅ Success! Video posted and saved as {video_filename}")
     except Exception as e:
         print(f"❌ Upload failed: {e}")
 
