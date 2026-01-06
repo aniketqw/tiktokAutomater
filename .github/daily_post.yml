@@ -4,8 +4,11 @@ permissions:
 
 on:
   schedule:
-    - cron: '0 4,12,20 * * *' # 3 Posts per day (4 AM, 12 PM, 8 PM UTC)
-  workflow_dispatch:
+    - cron: '0 4,12,20 * * *' # 3 Posts per day
+  push:
+    branches:
+      - main              # TRIGGER: Runs whenever you push a new commit
+  workflow_dispatch:      # Manual trigger
 
 jobs:
   post:
