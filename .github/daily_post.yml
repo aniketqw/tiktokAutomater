@@ -1,10 +1,12 @@
-permissions:
-  contents: write
 name: Daily Faceless TikTok
+permissions:
+  contents: write # FIX: Grants permission to push videos/index.html back to repo
+
 on:
   schedule:
-    - cron: '0 12 * * *' # Every day at noon
-  workflow_dispatch:      # This adds a "Run Workflow" button so you can test it NOW
+    # FIX: 3 Posts Per Day (Times are in UTC: 4 AM, 12 PM, 8 PM)
+    - cron: '0 4,12,20 * * *' 
+  workflow_dispatch: # Allows manual trigger for testing
 
 jobs:
   post:
@@ -20,8 +22,8 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg imagemagick
-          # This line is CRITICAL for MoviePy to write text
+          sudo apt-get install -y ffmpeg imagemagick google-chrome-stable
+          # FIX: Essential for MoviePy text rendering in 2026
           sudo sed -i 's/none/read,write/g' /etc/ImageMagick-6/policy.xml
 
       - name: Install Python Deps
@@ -38,10 +40,11 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
-      - name: Commit and Push Video
+
+      - name: Commit and Push Video & Logs
         run: |
           git config --global user.name "TikTok-Bot"
           git config --global user.email "bot@github.com"
           git add .
-          git commit -m "Generated new video: $(date)"
-          git push
+          # Only commit if there are changes to avoid workflow errors
+          git diff --quiet && git diff --staged --quiet || (git commit -m "New video & dashboard update: $(date)" && git push)
