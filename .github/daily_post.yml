@@ -1,3 +1,5 @@
+permissions:
+  contents: write
 name: Daily Faceless TikTok
 on:
   schedule:
@@ -36,3 +38,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
+      - name: Commit and Push Video
+        run: |
+          git config --global user.name "TikTok-Bot"
+          git config --global user.email "bot@github.com"
+          git add .
+          git commit -m "Generated new video: $(date)"
+          git push
