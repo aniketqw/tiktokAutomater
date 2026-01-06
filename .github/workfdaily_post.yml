@@ -1,0 +1,29 @@
+name: Daily TikTok Post
+on:
+  schedule:
+    - cron: '0 15 * * *' # Runs every day at 3:00 PM UTC
+  workflow_dispatch:      # Allows manual trigger
+
+jobs:
+  build-and-post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install System Dependencies
+        run: sudo apt-get install ffmpeg imagemagick
+
+      - name: Install Python Packages
+        run: pip install -r requirements.txt
+
+      - name: Run Automation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+        run: python src/main.py
