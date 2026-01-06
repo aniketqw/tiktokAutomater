@@ -3,3 +3,4 @@ moviepy
 tiktok-uploader
 playwright
 python-dotenv
+edge-tts
